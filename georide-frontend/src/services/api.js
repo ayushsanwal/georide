@@ -27,4 +27,14 @@ export const requestRide = async (
   return res.data;
 };
 
+export const getHotspots = async () => {
+  const res = await axios.get(`${BASE_URL}/admin/hotspots`);
+  return res.data;
+};
+
+export const getRecommendations = async () => {
+  const res = await axios.get(`${BASE_URL}/admin/recommendations`);
+  return res.data;
+};
+
 export const socket = io(BASE_URL);

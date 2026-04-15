@@ -29,9 +29,14 @@ const findDriverById = (id) => driversById[id];
 
 const getAllDrivers = () => Object.values(driversById);
 
+const getDriversByGeohash = (geohash) => {
+  return driversByGeohash[geohash] || [];
+};
+
 module.exports = {
   addOrUpdateDriver,
   findDriverById,
   getAllDrivers,
   driversByGeohash,
+  getDriversByGeohash,
 };

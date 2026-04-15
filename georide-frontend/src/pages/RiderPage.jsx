@@ -8,7 +8,13 @@ const RiderPage = () => {
   const [drop, setDrop] = useState(null);
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+     <div
+    style={{
+      display: "flex",
+      height: "calc(100vh - 60px)", 
+      marginTop: "60px", 
+    }}
+  >
       
       {/* LEFT PANEL */}
       <div style={{ width: "300px", background: "#111", color: "white" }}>

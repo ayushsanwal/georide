@@ -1,5 +1,6 @@
 const http = require("http");
 const app = require("./app");
+const connectDB = require("./config/db");
 const { Server } = require("socket.io");
 
 const { encodeGeohash } = require("./utils/geohash");
@@ -49,7 +50,7 @@ io.on("connection", (socket) => {
     console.log("Client disconnected:", socket.id);
   });
 });
-
+connectDB();
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -1,5 +1,8 @@
 const { findNearbyDrivers } = require("./matchingService");
 
+const { incrementDemand } = require("../data/demandStore");
+const { encodeGeohash } = require("../utils/geohash");
+
 let currentRide = null; // ✅ MUST BE NULL
 
 const requestRide = (pickupLat, pickupLng, dropLat, dropLng) => {
@@ -17,6 +20,9 @@ const requestRide = (pickupLat, pickupLng, dropLat, dropLng) => {
   const fare = Math.round(50 + tripDistance * 20);
   const eta = Math.round(tripDistance * 4);
   const otp = Math.floor(1000 + Math.random() * 9000);
+
+  const pickupHash = encodeGeohash(pickupLat, pickupLng);
+  incrementDemand(pickupHash);
 
   currentRide = {
     driver,

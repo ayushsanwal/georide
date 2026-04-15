@@ -5,7 +5,6 @@ import axios from "axios";
 const RidePanel = ({ pickup, drop, setAssignedDriver }) => {
   const [ride, setRide] = useState(null);
 
-  // 🔥 Load saved ride (but don't trust blindly)
   useEffect(() => {
     const saved = localStorage.getItem("ride");
 
@@ -16,13 +15,11 @@ const RidePanel = ({ pickup, drop, setAssignedDriver }) => {
     }
   }, []);
 
-  // 🔥 Sync with backend (SOURCE OF TRUTH)
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const res = await axios.get("http://localhost:5000/ride/current");
 
-        // ✅ If NO ride on backend → clear everything
         if (!res.data) {
           setRide(null);
           setAssignedDriver(null);
@@ -30,20 +27,16 @@ const RidePanel = ({ pickup, drop, setAssignedDriver }) => {
           return;
         }
 
-        // ✅ Sync with backend
         setRide(res.data);
         setAssignedDriver(res.data.driver);
         localStorage.setItem("ride", JSON.stringify(res.data));
 
-      } catch (err) {
-        // silent fail
-      }
+      } catch {}
     }, 2000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // 🚕 Request Ride
   const handleRequestRide = async () => {
     if (!pickup || !drop) {
       alert("Select pickup and drop");
@@ -66,37 +59,35 @@ const RidePanel = ({ pickup, drop, setAssignedDriver }) => {
     <div
       style={{
         padding: "20px",
-        background: "#020617",
-        color: "white",
+        background: "rgba(255,255,255,0.05)",
+        backdropFilter: "blur(12px)",
+        borderRight: "1px solid rgba(255,255,255,0.1)",
         height: "100%",
         width: "300px",
       }}
     >
-      {/* 🚀 SHOW BUTTON ONLY IF NO ACTIVE RIDE */}
       {!ride && (
         <button
           onClick={handleRequestRide}
           style={{
-            padding: "10px 15px",
-            background: "#00c896",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            color: "white",
             width: "100%",
+            padding: "12px",
+            background: "linear-gradient(135deg, #00c896, #00a67d)",
+            border: "none",
+            borderRadius: "10px",
+            color: "white",
+            fontWeight: "600",
+            cursor: "pointer",
           }}
         >
-          Request Ride
+          🚕 Request Ride
         </button>
       )}
 
-      {/* 📊 SHOW RIDE DETAILS */}
       {ride && (
-        <div style={{ marginTop: "20px" }}>
-          <p><b>Driver ID:</b> {ride.driver?.id}</p>
-
+        <div style={{ marginTop: "20px", lineHeight: "1.8" }}>
+          <p><b>Driver:</b> {ride.driver?.id}</p>
           <p><b>Fare:</b> ₹{ride.fare}</p>
-
           <p><b>ETA:</b> {ride.eta} mins</p>
 
           <p>
@@ -106,12 +97,12 @@ const RidePanel = ({ pickup, drop, setAssignedDriver }) => {
               : 0} km
           </p>
 
-          {/* OTP only before ride starts */}
           {ride.status === "ASSIGNED" && (
-            <p><b>OTP:</b> {ride.otp}</p>
+            <p style={{ color: "#38bdf8" }}>
+              <b>OTP:</b> {ride.otp}
+            </p>
           )}
 
-          {/* Status indicator */}
           <p style={{ marginTop: "10px", color: "#94a3b8" }}>
             Status: {ride.status}
           </p>
