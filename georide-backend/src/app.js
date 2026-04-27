@@ -11,22 +11,18 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("GeoRide Backend Running 🚀");
+  res.send("GeoRide Backend Running");
 });
 
-// ❌ REMOVE DRIVER ROUTE (NOT NEEDED)
-// app.post("/driver/location", driverController.updateDriverLocation);
-
-// Rider
 app.get("/rider/nearby-drivers", riderController.getNearbyDrivers);
 
-// Ride
 app.post("/ride/request", rideController.createRide);
 app.get("/ride/current", rideController.getRide);
+app.get("/ride/driver", rideController.getRideForDriver);
 app.post("/ride/verify-otp", rideController.verifyRideOTP);
 app.post("/ride/end", rideController.endRideController);
+app.post("/ride/cancel", rideController.cancelRideController);
 
-// Admin
 app.get("/admin/demand", adminController.getDemand);
 app.get("/admin/hotspots", adminController.getHotspotsController);
 app.get("/admin/recommendations", adminController.getRecommendationsController);

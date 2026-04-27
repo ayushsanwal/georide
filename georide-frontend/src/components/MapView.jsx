@@ -4,7 +4,78 @@ import { socket } from "../services/api";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-const MapView = ({ pickup, drop, assignedDriver, setPickup, setDrop }) => {
+const CENTER = [77.2090, 28.6139];
+
+const createLabelMarker = (label, color) => {
+  const el = document.createElement("div");
+  el.textContent = label;
+  el.style.width = "26px";
+  el.style.height = "26px";
+  el.style.borderRadius = "50%";
+  el.style.background = color;
+  el.style.color = "white";
+  el.style.display = "grid";
+  el.style.placeItems = "center";
+  el.style.fontSize = "12px";
+  el.style.fontWeight = "700";
+  el.style.transform = "translate(-50%, -50%)";
+  el.style.boxShadow = "0 4px 12px rgba(0,0,0,0.35)";
+  return el;
+};
+
+const setLine = (mapInstance, sourceId, layerId, coordinates, color) => {
+  const data = {
+    type: "Feature",
+    geometry: {
+      type: "LineString",
+      coordinates,
+    },
+  };
+
+  if (mapInstance.getSource(sourceId)) {
+    mapInstance.getSource(sourceId).setData(data);
+    return;
+  }
+
+  mapInstance.addSource(sourceId, {
+    type: "geojson",
+    data,
+  });
+
+  mapInstance.addLayer({
+    id: layerId,
+    type: "line",
+    source: sourceId,
+    layout: {
+      "line-cap": "round",
+      "line-join": "round",
+    },
+    paint: {
+      "line-color": color,
+      "line-width": 4,
+      "line-opacity": 0.85,
+    },
+  });
+};
+
+const removeLine = (mapInstance, sourceId, layerId) => {
+  if (mapInstance.getLayer(layerId)) {
+    mapInstance.removeLayer(layerId);
+  }
+
+  if (mapInstance.getSource(sourceId)) {
+    mapInstance.removeSource(sourceId);
+  }
+};
+
+const MapView = ({
+  pickup,
+  drop,
+  assignedDriver,
+  resetSignal,
+  setPickup,
+  setDrop,
+}) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
 
@@ -15,131 +86,144 @@ const MapView = ({ pickup, drop, assignedDriver, setPickup, setDrop }) => {
   const pickupRef = useRef(null);
   const dropRef = useRef(null);
 
-  const center = [77.2090, 28.6139];
-
-  // 🚀 INIT MAP
   useEffect(() => {
-    if (map.current) return;
+    if (map.current) return undefined;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v11",
-      center,
+      center: CENTER,
       zoom: 13,
     });
 
     setTimeout(() => {
-      map.current.resize();
+      map.current?.resize();
     }, 100);
 
     map.current.on("click", (e) => {
       const { lng, lat } = e.lngLat;
 
-      // 📍 PICKUP
       if (!pickupRef.current) {
         pickupRef.current = { lat, lng };
         setPickup(pickupRef.current);
 
-        if (pickupMarker.current) pickupMarker.current.remove();
-
-        const el = document.createElement("div");
-        el.innerHTML = "📍";
-        el.style.fontSize = "20px";
-        el.style.transform = "translate(-50%, -50%)";
-
-        pickupMarker.current = new mapboxgl.Marker(el)
+        pickupMarker.current?.remove();
+        pickupMarker.current = new mapboxgl.Marker(
+          createLabelMarker("P", "#0284c7")
+        )
           .setLngLat([lng, lat])
           .addTo(map.current);
-      }
-
-      // 🏁 DROP
-      else if (!dropRef.current) {
+      } else if (!dropRef.current) {
         dropRef.current = { lat, lng };
         setDrop(dropRef.current);
 
-        if (dropMarker.current) dropMarker.current.remove();
-
-        const el = document.createElement("div");
-        el.innerHTML = "🏁";
-        el.style.fontSize = "20px";
-        el.style.transform = "translate(-50%, -50%)";
-
-        dropMarker.current = new mapboxgl.Marker(el)
+        dropMarker.current?.remove();
+        dropMarker.current = new mapboxgl.Marker(
+          createLabelMarker("D", "#16a34a")
+        )
           .setLngLat([lng, lat])
           .addTo(map.current);
       }
     });
-  }, []);
 
-  // 🚗 DRIVER UPDATES (WITH FILTERING)
+    return () => {
+      map.current?.remove();
+      map.current = null;
+    };
+  }, [setDrop, setPickup]);
+
   useEffect(() => {
-    socket.on("driverLocationUpdate", (driver) => {
-      if (!map.current) return;
+    const handleDriverLocation = (driver) => {
+      if (!map.current || !driver) return;
 
       const isAssigned = assignedDriver?.id === driver.id;
 
-      // 🔥 IF RIDE ACTIVE → REMOVE OTHER DRIVERS
       if (assignedDriver && !isAssigned) {
-        if (markersRef.current[driver.id]) {
-          markersRef.current[driver.id].remove();
-          delete markersRef.current[driver.id];
-        }
+        markersRef.current[driver.id]?.remove();
+        delete markersRef.current[driver.id];
         return;
       }
 
       let marker = markersRef.current[driver.id];
 
       if (!marker) {
-        const el = document.createElement("div");
-
-        el.innerHTML = isAssigned ? "🚕" : "🚗";
-        el.style.fontSize = isAssigned ? "22px" : "16px";
-        el.style.transform = "translate(-50%, -50%)";
-
-        if (isAssigned) {
-          el.style.filter = "drop-shadow(0 0 6px cyan)";
-        }
-
-        marker = new mapboxgl.Marker(el)
+        marker = new mapboxgl.Marker(
+          createLabelMarker(isAssigned ? "T" : "C", isAssigned ? "#0891b2" : "#475569")
+        )
           .setLngLat([driver.lng, driver.lat])
           .addTo(map.current);
 
         markersRef.current[driver.id] = marker;
-
       } else {
-        // move
         marker.setLngLat([driver.lng, driver.lat]);
-
-        // update UI
         const el = marker.getElement();
-
-        el.innerHTML = isAssigned ? "🚕" : "🚗";
-        el.style.fontSize = isAssigned ? "22px" : "16px";
-
-        if (isAssigned) {
-          el.style.filter = "drop-shadow(0 0 6px cyan)";
-        } else {
-          el.style.filter = "none";
-        }
+        el.textContent = isAssigned ? "T" : "C";
+        el.style.background = isAssigned ? "#0891b2" : "#475569";
       }
-    });
+    };
 
-    return () => socket.off("driverLocationUpdate");
+    socket.on("driverLocationUpdate", handleDriverLocation);
+
+    return () => {
+      socket.off("driverLocationUpdate", handleDriverLocation);
+    };
   }, [assignedDriver]);
 
-  // 🔥 VERY IMPORTANT: RESTORE ALL DRIVERS AFTER RIDE ENDS
   useEffect(() => {
-    if (!assignedDriver) {
-      // remove all markers → they will reappear via socket
-      Object.values(markersRef.current).forEach((m) => m.remove());
-      markersRef.current = {};
+    if (assignedDriver) {
+      Object.entries(markersRef.current).forEach(([driverId, marker]) => {
+        if (driverId !== assignedDriver.id) {
+          marker.remove();
+          delete markersRef.current[driverId];
+        }
+      });
+      return;
     }
+
+    Object.values(markersRef.current).forEach((marker) => marker.remove());
+    markersRef.current = {};
   }, [assignedDriver]);
+
+  useEffect(() => {
+    if (!map.current || !pickup || !drop) return;
+
+    const drawRoute = () => {
+      setLine(
+        map.current,
+        "rider-route",
+        "rider-route-line",
+        [
+          [pickup.lng, pickup.lat],
+          [drop.lng, drop.lat],
+        ],
+        "#00a67d"
+      );
+    };
+
+    if (map.current.loaded()) {
+      drawRoute();
+      return;
+    }
+
+    map.current.once("load", drawRoute);
+  }, [pickup, drop]);
+
+  useEffect(() => {
+    pickupRef.current = null;
+    dropRef.current = null;
+    pickupMarker.current?.remove();
+    pickupMarker.current = null;
+    dropMarker.current?.remove();
+    dropMarker.current = null;
+    if (map.current) {
+      removeLine(map.current, "rider-route", "rider-route-line");
+    }
+  }, [resetSignal]);
 
   return (
     <div
       ref={mapContainer}
-      style={{ width: "100%", height: "100vh" }}
+      style={{ width: "100%", height: "100%" }}
     />
   );
 };

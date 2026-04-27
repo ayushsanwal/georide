@@ -1,27 +1,27 @@
 const { getHotspots } = require("./demandService");
 const { getDriversByGeohash } = require("../data/driverStore");
 
-// Suggest drivers for hotspots
-const recommendDrivers = () => {
-  const hotspots = getHotspots(3);
+const recommendDrivers = async () => {
+  const hotspots = await getHotspots(3);
 
-  const recommendations = [];
+  return Promise.all(
+    hotspots.map(async (hotspot) => {
+      const drivers = await getDriversByGeohash(hotspot.geohash);
+      const availableDrivers = drivers.filter(
+        (driver) => driver.status === "AVAILABLE"
+      );
 
-  for (const hotspot of hotspots) {
-    const drivers = getDriversByGeohash(hotspot.geohash);
-
-    const availableDrivers = drivers.filter(
-      (d) => d.status === "AVAILABLE"
-    );
-
-    recommendations.push({
-      geohash: hotspot.geohash,
-      demand: hotspot.demand,
-      availableDrivers: availableDrivers.map((d) => d.id),
-    });
-  }
-
-  return recommendations;
+      return {
+        geohash: hotspot.geohash,
+        lat: hotspot.lat,
+        lng: hotspot.lng,
+        demand: hotspot.demand,
+        availableDrivers: availableDrivers.map((driver) => driver.id),
+        availableDriversNearby: availableDrivers.length,
+        message: "High demand area",
+      };
+    })
+  );
 };
 
 module.exports = {

@@ -1,18 +1,26 @@
 const { findNearbyDrivers } = require("../services/matchingService");
 
-const getNearbyDrivers = (req, res) => {
-  const { lat, lng } = req.query;
+const getNearbyDrivers = async (req, res) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
 
-  if (!lat || !lng) {
-    return res.status(400).json({ error: "Missing location" });
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.status(400).json({ error: "INVALID_LOCATION" });
   }
 
-  const drivers = findNearbyDrivers(Number(lat), Number(lng));
+  try {
+    const drivers = await findNearbyDrivers(lat, lng);
 
-  return res.json({
-    count: drivers.length,
-    drivers,
-  });
+    return res.json({
+      count: drivers.length,
+      drivers,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "INTERNAL_ERROR",
+      message: error.message,
+    });
+  }
 };
 
 module.exports = {

@@ -1,42 +1,80 @@
-const driversByGeohash = {};
-const driversById = {};
+const Driver = require("../models/Driver");
 
-const addOrUpdateDriver = (driver) => {
+const addOrUpdateDriver = async (driver) => {
   const { id, geohash } = driver;
 
-  // remove from old geohash if exists
-  if (driversById[id]) {
-    const oldGeohash = driversById[id].geohash;
-    driversByGeohash[oldGeohash] = driversByGeohash[
-      oldGeohash
-    ]?.filter((d) => d.id !== id);
-  }
+  if (!id || !geohash) return null;
 
-  // add to new geohash
-  if (!driversByGeohash[geohash]) {
-    driversByGeohash[geohash] = [];
-  }
+  const updatedDriver = await Driver.findOneAndUpdate(
+    { id },
+    {
+      $set: {
+        lat: driver.lat,
+        lng: driver.lng,
+        geohash: driver.geohash,
+        updatedAt: driver.updatedAt || Date.now(),
+      },
+      $setOnInsert: {
+        status: driver.status || "AVAILABLE",
+        currentRideId: driver.currentRideId || null,
+      },
+    },
+    {
+      upsert: true,
+      returnDocument: "after",
+      lean: true,
+    }
+  );
 
-  driversByGeohash[geohash].push(driver);
-
-  // store by id
-  driversById[id] = driver;
-
-  console.log("📦 DRIVER STORE:", Object.keys(driversById).length);
+  return updatedDriver;
 };
 
-const findDriverById = (id) => driversById[id];
+const findDriverById = async (id) => Driver.findOne({ id }).lean();
 
-const getAllDrivers = () => Object.values(driversById);
+const getAllDrivers = async () => Driver.find({}).lean();
 
-const getDriversByGeohash = (geohash) => {
-  return driversByGeohash[geohash] || [];
+const getDriversByGeohash = async (geohash) =>
+  Driver.find({ geohash }).lean();
+
+const findDriversByGeohashes = async (geohashes, maxUpdatedAtAgeMs) => {
+  const minUpdatedAt = Date.now() - maxUpdatedAtAgeMs;
+
+  return Driver.find({
+    geohash: { $in: geohashes },
+    updatedAt: { $gte: minUpdatedAt },
+  }).lean();
 };
+
+const setDriverBusy = async (id, rideId) =>
+  Driver.findOneAndUpdate(
+    { id, status: "AVAILABLE" },
+    {
+      $set: {
+        status: "BUSY",
+        currentRideId: rideId,
+      },
+    },
+    { returnDocument: "after", lean: true }
+  );
+
+const setDriverAvailable = async (id) =>
+  Driver.findOneAndUpdate(
+    { id },
+    {
+      $set: {
+        status: "AVAILABLE",
+        currentRideId: null,
+      },
+    },
+    { returnDocument: "after", lean: true }
+  );
 
 module.exports = {
   addOrUpdateDriver,
   findDriverById,
   getAllDrivers,
-  driversByGeohash,
   getDriversByGeohash,
+  findDriversByGeohashes,
+  setDriverBusy,
+  setDriverAvailable,
 };

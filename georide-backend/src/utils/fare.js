@@ -2,7 +2,6 @@ const BASE_FARE = 50;
 const PER_KM_RATE = 12;
 const AVG_SPEED = 30; // km/h
 
-// Haversine distance
 const calculateDistance = (lat1, lng1, lat2, lng2) => {
   const R = 6371;
 
@@ -24,10 +23,9 @@ const calculateFare = (distance) => {
   return Math.round(BASE_FARE + distance * PER_KM_RATE);
 };
 
-// 🔥 NEW ETA FUNCTION
 const calculateETA = (distance) => {
   const hours = distance / AVG_SPEED;
-  return Math.ceil(hours * 60); // minutes
+  return Math.max(1, Math.ceil(hours * 60));
 };
 
 module.exports = {

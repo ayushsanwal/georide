@@ -1,10 +1,9 @@
 const { io } = require("socket.io-client");
 
 const socket = io("http://localhost:5000", {
-  transports: ["websocket"], // 🔥 force stable connection
+  transports: ["websocket"],
 });
 
-// initial positions
 const drivers = {
   d1: { lat: 28.6139, lng: 77.2090 },
   d2: { lat: 28.6145, lng: 77.2095 },
@@ -14,7 +13,7 @@ const drivers = {
 };
 
 socket.on("connect", () => {
-  console.log("✅ Connected:", socket.id);
+  console.log("Connected:", socket.id);
 
   setInterval(() => {
     Object.keys(drivers).forEach((id) => {
@@ -27,19 +26,17 @@ socket.on("connect", () => {
         lng: drivers[id].lng,
       };
 
-      console.log("📡 Sending:", data); // 🔥 DEBUG
+      console.log("Sending:", data);
 
       socket.emit("driverLocationUpdate", data);
     });
   }, 1000);
 });
 
-// 🔥 ADD THESE (VERY IMPORTANT)
-
 socket.on("disconnect", () => {
-  console.log("❌ Disconnected from server");
+  console.log("Disconnected from server");
 });
 
 socket.on("connect_error", (err) => {
-  console.error("🚨 Connection error:", err.message);
+  console.error("Connection error:", err.message);
 });

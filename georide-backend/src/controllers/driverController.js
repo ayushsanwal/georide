@@ -1,30 +1,35 @@
 const { encodeGeohash } = require("../utils/geohash");
 const { addOrUpdateDriver } = require("../data/driverStore");
 
-const updateDriverLocation = (req, res) => {
-  const { driverId, lat, lng } = req.body;
+const updateDriverLocation = async (req, res) => {
+  const { driverId } = req.body;
+  const lat = Number(req.body.lat);
+  const lng = Number(req.body.lng);
 
-  if (!driverId || !lat || !lng) {
-    return res.status(400).json({ error: "Missing fields" });
+  if (!driverId || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.status(400).json({ error: "INVALID_LOCATION" });
   }
 
-  const geohash = encodeGeohash(lat, lng);
+  try {
+    const geohash = encodeGeohash(lat, lng);
+    const driver = await addOrUpdateDriver({
+      id: driverId,
+      lat,
+      lng,
+      geohash,
+      updatedAt: Date.now(),
+    });
 
-  const driver = {
-    id: driverId,
-    lat,
-    lng,
-    geohash,
-    status: "AVAILABLE", // 🔥 NEW
-    updatedAt: Date.now(),
-  };
-
-  addOrUpdateDriver(driver);
-
-  return res.json({
-    message: "Driver location updated",
-    driver,
-  });
+    return res.json({
+      message: "Driver location updated",
+      driver,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "INTERNAL_ERROR",
+      message: error.message,
+    });
+  }
 };
 
 module.exports = {

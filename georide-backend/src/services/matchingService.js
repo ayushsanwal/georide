@@ -1,35 +1,35 @@
-const { driversByGeohash } = require("../data/driverStore");
 const geohash = require("ngeohash");
+const { findDriversByGeohashes } = require("../data/driverStore");
 const { getDistance } = require("../utils/distance");
 
-const findNearbyDrivers = (lat, lng, limit = 5) => {
-  const hash = geohash.encode(lat, lng, 6);
+const DEFAULT_RADIUS_KM = 5;
+const DEFAULT_LIMIT = 5;
+const DEFAULT_MAX_DRIVER_AGE_MS = 30000;
 
-  // current + neighbors
-  const neighbors = geohash.neighbors(hash);
+const findNearbyDrivers = async (lat, lng, options = {}) => {
+  const {
+    radiusKm = DEFAULT_RADIUS_KM,
+    limit = DEFAULT_LIMIT,
+    maxDriverAgeMs = DEFAULT_MAX_DRIVER_AGE_MS,
+  } = options;
 
-  const searchHashes = [hash, ...neighbors];
+  const pickupHash = geohash.encode(lat, lng, 6);
+  const searchHashes = [pickupHash, ...geohash.neighbors(pickupHash)];
+  const candidates = await findDriversByGeohashes(searchHashes, maxDriverAgeMs);
+  const candidatesById = new Map();
 
-  let candidates = [];
-
-  searchHashes.forEach((h) => {
-    if (driversByGeohash[h]) {
-      candidates.push(...driversByGeohash[h]);
-    }
+  candidates.forEach((driver) => {
+    candidatesById.set(driver.id, driver);
   });
 
-  // filter available
-  const available = candidates.filter(
-    (d) => d.status === "AVAILABLE"
-  );
+  const withDistance = [...candidatesById.values()]
+    .filter((driver) => driver.status === "AVAILABLE")
+    .map((driver) => ({
+      ...driver,
+      distance: getDistance(lat, lng, driver.lat, driver.lng),
+    }))
+    .filter((driver) => driver.distance <= radiusKm);
 
-  // compute distance
-  const withDistance = available.map((d) => ({
-    ...d,
-    distance: getDistance(lat, lng, d.lat, d.lng),
-  }));
-
-  // sort
   withDistance.sort((a, b) => a.distance - b.distance);
 
   return withDistance.slice(0, limit);

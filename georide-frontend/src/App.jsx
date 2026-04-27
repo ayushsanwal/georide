@@ -7,7 +7,7 @@ import Navbar from "./components/Navbar";
 function App() {
   return (
     <BrowserRouter>
-      <Navbar /> {/* ✅ GLOBAL NAVBAR */}
+      <Navbar />
 
       <Routes>
         <Route path="/" element={<Home />} />

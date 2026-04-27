@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 const Navbar = () => {
   return (
     <div style={styles.nav}>
-      <div style={styles.logo}>🚕 GeoRide</div>
+      <div style={styles.logo}>GeoRide</div>
 
       <div style={styles.links}>
         <Link to="/" style={styles.link}>Home</Link>
@@ -24,26 +24,24 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "0 30px",
-    background: "rgba(2,6,23,0.8)",
+    background: "rgba(2,6,23,0.88)",
     backdropFilter: "blur(12px)",
     borderBottom: "1px solid rgba(255,255,255,0.1)",
     zIndex: 1000,
   },
-
   logo: {
     fontSize: "20px",
-    fontWeight: "600",
+    fontWeight: "800",
+    color: "#f8fafc",
   },
-
   links: {
     display: "flex",
-    gap: "25px",
+    gap: "22px",
   },
-
   link: {
-    color: "#cbd5f5",
+    color: "#cbd5e1",
     textDecoration: "none",
-    fontWeight: "500",
+    fontWeight: "600",
   },
 };
 

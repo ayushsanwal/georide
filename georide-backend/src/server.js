@@ -22,35 +22,53 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
 
-  socket.on("driverLocationUpdate", (data) => {
-    const { driverId, lat, lng } = data;
+  socket.on("driverLocationUpdate", async (data) => {
+    try {
+      const { driverId } = data || {};
+      const lat = Number(data?.lat);
+      const lng = Number(data?.lng);
 
-    const geohash = encodeGeohash(lat, lng);
+      if (!driverId || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+        socket.emit("driverLocationError", {
+          message: "Invalid driver location payload",
+        });
+        return;
+      }
 
-    // 🔥 Always get existing driver first
-    const existingDriver = findDriverById(driverId);
+      const existingDriver = await findDriverById(driverId);
+      const geohash = encodeGeohash(lat, lng);
+      const updatedDriver = await addOrUpdateDriver({
+        id: driverId,
+        lat,
+        lng,
+        geohash,
+        status: existingDriver?.status || "AVAILABLE",
+        currentRideId: existingDriver?.currentRideId || null,
+        updatedAt: Date.now(),
+      });
 
-    const driver = {
-      id: driverId,
-      lat,
-      lng,
-      geohash,
-      status: existingDriver
-        ? existingDriver.status // preserve ALWAYS
-        : "AVAILABLE",
-      updatedAt: Date.now(),
-    };
-
-    addOrUpdateDriver(driver);
-
-    io.emit("driverLocationUpdate", driver);
+      io.emit("driverLocationUpdate", updatedDriver);
+    } catch (error) {
+      socket.emit("driverLocationError", {
+        message: error.message,
+      });
+    }
   });
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
   });
 });
-connectDB();
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+const startServer = async () => {
+  await connectDB();
+
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error("Failed to start server:", error.message);
+  process.exit(1);
 });

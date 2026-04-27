@@ -1,16 +1,24 @@
+const geohashLib = require("ngeohash");
 const { getDemandMap } = require("../data/demandStore");
 
-const getHotspots = (limit = 3) => {
-  const demand = getDemandMap();
+const decodeHotspot = (geohash) => {
+  const { latitude, longitude } = geohashLib.decode(geohash);
 
+  return {
+    geohash,
+    lat: latitude,
+    lng: longitude,
+  };
+};
+
+const getHotspots = async (limit = 3) => {
+  const demand = await getDemandMap();
   const entries = Object.entries(demand);
 
-  // Sort by demand (descending)
   entries.sort((a, b) => b[1] - a[1]);
 
-  // Return top K
   return entries.slice(0, limit).map(([geohash, count]) => ({
-    geohash,
+    ...decodeHotspot(geohash),
     demand: count,
   }));
 };

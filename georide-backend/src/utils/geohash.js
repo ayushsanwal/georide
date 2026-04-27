@@ -1,8 +1,9 @@
 const ngeohash = require("ngeohash");
 
-// 🔥 FIXED precision (DO NOT make dynamic)
+const GEOHASH_PRECISION = 6;
+
 const encodeGeohash = (lat, lng) => {
-  return ngeohash.encode(lat, lng, 6);
+  return ngeohash.encode(lat, lng, GEOHASH_PRECISION);
 };
 
 const getNeighbors = (geohash) => {
@@ -12,4 +13,5 @@ const getNeighbors = (geohash) => {
 module.exports = {
   encodeGeohash,
   getNeighbors,
+  GEOHASH_PRECISION,
 };

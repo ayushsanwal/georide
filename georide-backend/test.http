@@ -1,68 +1,56 @@
-### =====================================
-
 ### GeoRide Backend API Testing
 
-### =====================================
-
-### 1️⃣ Get Nearby Drivers (Run multiple times to observe real-time updates)
-
+### Get nearby drivers
 GET http://localhost:5000/rider/nearby-drivers?lat=28.6140&lng=77.2091
 
-### =====================================
-
-### 2️⃣ Request Ride (Assign nearest driver)
-
+### Request ride
 POST http://localhost:5000/ride/request
 Content-Type: application/json
 
 {
-"lat": 28.6140,
-"lng": 77.2091
-}
-
-### =====================================
-
-### 3️⃣ Verify After Assignment (Driver should now be BUSY)
-
-GET http://localhost:5000/rider/nearby-drivers?lat=28.6140&lng=77.2091
-
-
-###
-GET http://localhost:5000/admin/demand
-
-###
-GET http://localhost:5000/admin/hotspots
-
-###
-GET http://localhost:5000/admin/recommendations
-
-###
-POST http://localhost:5000/ride/request
-Content-Type: application/json
-
-{
-  "lat": 28.6140,
-  "lng": 77.2091
-}
-
-###
-POST http://localhost:5000/ride/request
-Content-Type: application/json
-
-{
+  "riderId": "r_demo",
   "pickupLat": 28.6139,
   "pickupLng": 77.2090,
   "dropLat": 28.6200,
   "dropLng": 77.2200
 }
 
-###
+### Get current rider ride
+GET http://localhost:5000/ride/current?riderId=r_demo
+
+### Get driver ride
+GET http://localhost:5000/ride/driver?driverId=d_demo
+
+### Verify ride OTP
 POST http://localhost:5000/ride/verify-otp
 Content-Type: application/json
 
 {
-  "otp": 7737
+  "riderId": "r_demo",
+  "otp": "1234"
 }
 
-###
+### End ride
 POST http://localhost:5000/ride/end
+Content-Type: application/json
+
+{
+  "riderId": "r_demo"
+}
+
+### Cancel ride
+POST http://localhost:5000/ride/cancel
+Content-Type: application/json
+
+{
+  "riderId": "r_demo"
+}
+
+### Demand map
+GET http://localhost:5000/admin/demand
+
+### Hotspots
+GET http://localhost:5000/admin/hotspots
+
+### Recommendations
+GET http://localhost:5000/admin/recommendations
